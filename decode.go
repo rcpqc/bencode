@@ -28,14 +28,6 @@ func init() {
 	decoders['9'] = strDecoder
 }
 
-func Unmarshal(data []byte, v interface{}) error {
-	buf := bytes.NewBuffer(data)
-	if err := decode(buf, reflect.ValueOf(v)); err != nil {
-		return err
-	}
-	return nil
-}
-
 func decode(buf *bytes.Buffer, rv reflect.Value) error {
 	b, err := buf.ReadByte()
 	if err != nil {
@@ -84,7 +76,7 @@ func readInteger(buf *bytes.Buffer) (int64, error) {
 		if integer == 0 {
 			return 0, fmt.Errorf("minus zero is illegal")
 		}
-		return integer, nil
+		return -integer, nil
 	}
 	return integer, nil
 }
@@ -116,6 +108,8 @@ func intDecoder(buf *bytes.Buffer, rv reflect.Value) error {
 		rv.SetUint(uint64(integer))
 	case reflect.Bool:
 		rv.SetBool(integer != 0)
+	case reflect.Interface:
+		rv.Set(reflect.ValueOf(int(integer)))
 	default:
 		return fmt.Errorf("value's kind(%v) not match", rv.Kind())
 	}
@@ -137,8 +131,11 @@ func strDecoder(buf *bytes.Buffer, rv reflect.Value) error {
 		return fmt.Errorf("strDecoder parse error")
 	}
 	bytes := buf.Next(int(length))
+	str := *(*string)(unsafe.Pointer(&bytes))
 	if rv.Kind() == reflect.String {
-		rv.SetString(*(*string)(unsafe.Pointer(&bytes)))
+		rv.SetString(str)
+	} else if rv.Kind() == reflect.Interface {
+		rv.Set(reflect.ValueOf(str))
 	} else {
 		return fmt.Errorf("value's kind(%v) not match", rv.Kind())
 	}
@@ -191,7 +188,7 @@ func dictDecoder(buf *bytes.Buffer, rv reflect.Value) error {
 		return dictMapDecoder(buf, rv)
 	} else if rv.Kind() == reflect.Struct {
 		return dictStructDecoder(buf, rv)
-	} else if rv.Kind() == reflect.Interface {
+	} else if rv.Kind() == reflect.Invalid {
 		rmap := reflect.ValueOf(map[string]interface{}{})
 		if err := dictMapDecoder(buf, rmap); err != nil {
 			return err
@@ -246,7 +243,8 @@ func dictStructDecoder(buf *bytes.Buffer, rv reflect.Value) error {
 		// Read Value
 		rval := tagField(rv, key)
 		if !rval.IsValid() {
-			continue
+			var val interface{}
+			rval = reflect.ValueOf(&val).Elem()
 		}
 		if err := decode(buf, rval); err != nil {
 			return err

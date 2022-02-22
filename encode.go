@@ -33,14 +33,6 @@ func init() {
 	encoders[reflect.Struct] = structEncoder
 }
 
-func Marshal(v interface{}) ([]byte, error) {
-	buf := bytes.Buffer{}
-	if err := encode(&buf, reflect.ValueOf(v)); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
 func encode(buf *bytes.Buffer, rv reflect.Value) error {
 	encoder := encoders[rv.Kind()]
 	if encoder == nil {
@@ -61,7 +53,7 @@ func boolEncoder(buf *bytes.Buffer, rv reflect.Value) error {
 func intEncoder(buf *bytes.Buffer, rv reflect.Value) error {
 	buf.Write([]byte{'i'})
 	var dst [64]byte
-	buf.Write(strconv.AppendInt(dst[:], rv.Int(), 10))
+	buf.Write(strconv.AppendInt(dst[:0], rv.Int(), 10))
 	buf.Write([]byte{'e'})
 	return nil
 }
@@ -69,7 +61,7 @@ func intEncoder(buf *bytes.Buffer, rv reflect.Value) error {
 func uintEncoder(buf *bytes.Buffer, rv reflect.Value) error {
 	buf.Write([]byte{'i'})
 	var dst [64]byte
-	buf.Write(strconv.AppendUint(dst[:], rv.Uint(), 10))
+	buf.Write(strconv.AppendUint(dst[:0], rv.Uint(), 10))
 	buf.Write([]byte{'e'})
 	return nil
 }
@@ -110,7 +102,7 @@ func strEncoder(buf *bytes.Buffer, rv reflect.Value) error {
 	str := rv.String()
 	length := int64(len(str))
 	var dst [64]byte
-	buf.Write(strconv.AppendInt(dst[:], length, 10))
+	buf.Write(strconv.AppendInt(dst[:0], length, 10))
 	buf.Write([]byte{':'})
 	buf.WriteString(str)
 	return nil
