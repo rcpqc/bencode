@@ -48,6 +48,11 @@ func indirect(rv reflect.Value) reflect.Value {
 		}
 		rv = rv.Elem()
 	}
+	if rv.Kind() == reflect.Map {
+		if rv.IsNil() {
+			rv.Set(reflect.MakeMap(rv.Type()))
+		}
+	}
 	return rv
 }
 
@@ -188,12 +193,13 @@ func dictDecoder(buf *bytes.Buffer, rv reflect.Value) error {
 		return dictMapDecoder(buf, rv)
 	} else if rv.Kind() == reflect.Struct {
 		return dictStructDecoder(buf, rv)
-	} else if rv.Kind() == reflect.Invalid {
+	} else if rv.Kind() == reflect.Interface {
 		rmap := reflect.ValueOf(map[string]interface{}{})
 		if err := dictMapDecoder(buf, rmap); err != nil {
 			return err
 		}
 		rv.Set(rmap)
+		return nil
 	}
 	return fmt.Errorf("type not match")
 }

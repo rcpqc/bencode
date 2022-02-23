@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
 )
 
@@ -83,14 +84,18 @@ func elemEncoder(buf *bytes.Buffer, rv reflect.Value) error {
 
 func mapEncoder(buf *bytes.Buffer, rv reflect.Value) error {
 	buf.Write([]byte{'d'})
-	for iter := rv.MapRange(); iter.Next(); {
-		if iter.Key().Kind() != reflect.String {
-			return fmt.Errorf("key of dict must be string")
-		}
-		if err := strEncoder(buf, iter.Key()); err != nil {
+	if rv.Type().Key().Kind() != reflect.String {
+		return fmt.Errorf("key of map must be string")
+	}
+	keys := rv.MapKeys()
+	sort.Slice(keys, func(i, j int) bool { return keys[i].String() < keys[j].String() })
+
+	for _, key := range keys {
+		val := rv.MapIndex(key)
+		if err := strEncoder(buf, key); err != nil {
 			return err
 		}
-		if err := encode(buf, iter.Value()); err != nil {
+		if err := encode(buf, val); err != nil {
 			return err
 		}
 	}
