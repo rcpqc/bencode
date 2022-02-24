@@ -43,20 +43,20 @@ var comTests = []TestCase{
 	{Entity: []interface{}{"aa", "b", 33, -23, "XX"}, Data: []byte("l2:aa1:bi33ei-23e2:XXe")},
 	{Entity: map[string]int{"aa": 43, "bbbfe": -544, "": 0}, Data: []byte("d0:i0e2:aai43e5:bbbfei-544ee")},
 	{Entity: map[string]interface{}{"a": "1", "b": "2", "c": 3, "d": 4, "e": "5"}, Data: []byte("d1:a1:11:b1:21:ci3e1:di4e1:e1:5e")},
-	{Entity: TestS3{S1: &TestS1{Sf: "gjc", Ffgd: 87}, SS3: true}, Data: []byte("d2:s1d2:sf3:gjc4:ffgdi87ee3:SS3i1ee")},
+	{Entity: TestS3{S1: &TestS1{Sf: "gjc", Ffgd: 87}, SS3: true}, Data: []byte("d3:SS3i1e2:s1d4:ffgdi87e2:sf3:gjcee")},
 }
 
 var encTests = []TestCase{
-	{Entity: TestS1{"xxx", 2, "", 556}, Data: []byte("d2:sf3:xxx4:ffgdi2ee")},
-	{Entity: TestS1{"xxx", 2, "66", 556}, Data: []byte("d2:sf3:xxx4:ffgdi2e3:hhd2:66e")},
+	{Entity: TestS1{"xxx", 2, "", 556}, Data: []byte("d4:ffgdi2e2:sf3:xxxe")},
+	{Entity: TestS1{"xxx", 2, "66", 556}, Data: []byte("d4:ffgdi2e3:hhd2:662:sf3:xxxe")},
 	{Entity: TestS2{GGG: "gggee", IFace: []int{4, 6}}, Data: []byte("d3:GGG5:gggee5:ifaceli4ei6eee")},
 	{Entity: TestS2{GGG: "gggee", IFace: map[string]int{"gds": 8, "353": -45}}, Data: []byte("d3:GGG5:gggee5:ifaced3:353i-45e3:gdsi8eee")},
 	{Entity: [3]int{1, 3, 5}, Data: []byte("li1ei3ei5ee")},
 }
 
 var decTests = []TestCase{
-	{Entity: TestS1{"xxx", 2, "", 0}, Data: []byte("d2:sf3:xxx4:ffgdi2ee")},
-	{Entity: TestS1{"xxx", 2, "66", 0}, Data: []byte("d2:sf3:xxx4:ffgdi2e3:hhd2:664:XXYhi556ee")},
+	{Entity: TestS1{"xxx", 2, "", 0}, Data: []byte("d4:ffgdi2e2:sf3:xxxe")},
+	{Entity: TestS1{"xxx", 2, "66", 0}, Data: []byte("d4:XXYhi556e4:ffgdi2e3:hhd2:662:sf3:xxxe")},
 	{Entity: TestS2{GGG: "gggee", IFace: []interface{}{4, 6}}, Data: []byte("d3:GGG5:gggee5:ifaceli4ei6eee")},
 	{Entity: TestS2{GGG: "gggee", IFace: map[string]interface{}{"gds": 8, "353": -45}}, Data: []byte("d3:GGG5:gggee5:ifaced3:353i-45e3:gdsi8eee")},
 	{Entity: []int{1, 3, 5}, Data: []byte("li1ei3ei5ee")},

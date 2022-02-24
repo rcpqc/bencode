@@ -115,8 +115,6 @@ func intDecoder(buf *bytes.Buffer, rv reflect.Value) error {
 		rv.SetBool(integer != 0)
 	case reflect.Interface:
 		rv.Set(reflect.ValueOf(int(integer)))
-	default:
-		return fmt.Errorf("value's kind(%v) not match", rv.Kind())
 	}
 	return nil
 }
@@ -141,8 +139,6 @@ func strDecoder(buf *bytes.Buffer, rv reflect.Value) error {
 		rv.SetString(str)
 	} else if rv.Kind() == reflect.Interface {
 		rv.Set(reflect.ValueOf(str))
-	} else {
-		return fmt.Errorf("value's kind(%v) not match", rv.Kind())
 	}
 	return nil
 }
@@ -201,7 +197,7 @@ func dictDecoder(buf *bytes.Buffer, rv reflect.Value) error {
 		rv.Set(rmap)
 		return nil
 	}
-	return fmt.Errorf("type not match")
+	return nil
 }
 
 func dictMapDecoder(buf *bytes.Buffer, rv reflect.Value) error {
@@ -231,6 +227,7 @@ func dictMapDecoder(buf *bytes.Buffer, rv reflect.Value) error {
 }
 
 func dictStructDecoder(buf *bytes.Buffer, rv reflect.Value) error {
+	fields := tyParseMap(rv.Type())
 	for {
 		b, err := buf.ReadByte()
 		if err != nil {
@@ -246,13 +243,15 @@ func dictStructDecoder(buf *bytes.Buffer, rv reflect.Value) error {
 		if err := strDecoder(buf, rkey.Elem()); err != nil {
 			return err
 		}
-		// Read Value
-		rval := tagField(rv, key)
-		if !rval.IsValid() {
-			var val interface{}
-			rval = reflect.ValueOf(&val).Elem()
+
+		// Find Field
+		rfield := reflect.Value{}
+		if field, ok := fields[key]; ok {
+			rfield = rv.Field(field.Index)
 		}
-		if err := decode(buf, rval); err != nil {
+
+		// Read Value
+		if err := decode(buf, rfield); err != nil {
 			return err
 		}
 	}

@@ -115,22 +115,15 @@ func strEncoder(buf *bytes.Buffer, rv reflect.Value) error {
 
 func structEncoder(buf *bytes.Buffer, rv reflect.Value) error {
 	buf.Write([]byte{'d'})
-	rt := rv.Type()
-	for i := 0; i < rv.NumField(); i++ {
-		alias, opt := tagParse(rt.Field(i).Tag.Get("bencode"))
-		if alias == "-" {
+	fields := tyParseSlice(rv.Type())
+	for _, field := range fields {
+		if field.Option == "omitempty" && rv.Field(field.Index).IsZero() {
 			continue
 		}
-		if opt == "omitempty" && rv.Field(i).IsZero() {
-			continue
-		}
-		if alias == "" {
-			alias = rt.Field(i).Name
-		}
-		if err := strEncoder(buf, reflect.ValueOf(alias)); err != nil {
+		if err := strEncoder(buf, reflect.ValueOf(field.Name)); err != nil {
 			return err
 		}
-		if err := encode(buf, rv.Field(i)); err != nil {
+		if err := encode(buf, rv.Field(field.Index)); err != nil {
 			return err
 		}
 	}
