@@ -141,16 +141,22 @@ func strDecoder(buf *bytes.Buffer, rv reflect.Value) error {
 	return nil
 }
 
-func listDecoder(buf *bytes.Buffer, rv reflect.Value) error {
-	relem := reflect.Value{}
-	rsli := reflect.Value{}
-	if rv.Kind() == reflect.Slice {
-		relem = reflect.New(rv.Type().Elem()).Elem()
-		rsli = rv
+func makeElement(rv reflect.Value) reflect.Value {
+	if rv.Kind() == reflect.Slice || rv.Kind() == reflect.Map {
+		return reflect.New(rv.Type().Elem()).Elem()
 	} else if rv.Kind() == reflect.Interface {
 		var elem interface{}
+		return reflect.ValueOf(&elem).Elem()
+	}
+	return reflect.Value{}
+}
+
+func listDecoder(buf *bytes.Buffer, rv reflect.Value) error {
+	rsli := reflect.Value{}
+	if rv.Kind() == reflect.Slice {
+		rsli = rv
+	} else if rv.Kind() == reflect.Interface {
 		sli := []interface{}{}
-		relem = reflect.ValueOf(&elem).Elem()
 		rsli = reflect.ValueOf(&sli).Elem()
 	}
 
@@ -168,6 +174,7 @@ func listDecoder(buf *bytes.Buffer, rv reflect.Value) error {
 		buf.UnreadByte()
 
 		// Read Value
+		relem := makeElement(rv)
 		if err := decode(buf, relem); err != nil {
 			return err
 		}
@@ -192,18 +199,11 @@ func dictDecoder(buf *bytes.Buffer, rv reflect.Value) error {
 }
 
 func dictMapDecoder(buf *bytes.Buffer, rv reflect.Value) error {
-	rkey, rval, rmap := reflect.Value{}, reflect.Value{}, reflect.Value{}
+	rmap := reflect.Value{}
 	if rv.Kind() == reflect.Map && rv.Type().Key().Kind() == reflect.String {
-		key := ""
-		rkey = reflect.ValueOf(&key).Elem()
-		rval = reflect.New(rv.Type().Elem()).Elem()
 		rmap = rv
 	} else if rv.Kind() == reflect.Interface {
-		key := ""
-		var val interface{}
 		m := map[string]interface{}{}
-		rkey = reflect.ValueOf(&key).Elem()
-		rval = reflect.ValueOf(&val).Elem()
 		rmap = reflect.ValueOf(&m).Elem()
 	}
 	if err := readAssert(buf, 'd'); err != nil {
@@ -219,10 +219,13 @@ func dictMapDecoder(buf *bytes.Buffer, rv reflect.Value) error {
 		}
 		buf.UnreadByte()
 		// Read Key
+		key := ""
+		rkey := reflect.ValueOf(&key).Elem()
 		if err := strDecoder(buf, rkey); err != nil {
 			return err
 		}
 		// Read Value
+		rval := makeElement(rv)
 		if err := decode(buf, rval); err != nil {
 			return err
 		}
@@ -253,8 +256,8 @@ func dictStructDecoder(buf *bytes.Buffer, rv reflect.Value) error {
 		buf.UnreadByte()
 		// Read Key
 		key := ""
-		rkey := reflect.ValueOf(&key)
-		if err := strDecoder(buf, rkey.Elem()); err != nil {
+		rkey := reflect.ValueOf(&key).Elem()
+		if err := strDecoder(buf, rkey); err != nil {
 			return err
 		}
 
