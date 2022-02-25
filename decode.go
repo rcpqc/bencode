@@ -34,7 +34,7 @@ func decode(buf *bytes.Buffer, rv reflect.Value) error {
 	}
 	decoder := decoders[b]
 	if decoder == nil {
-		return fmt.Errorf("decoder(%s) not supported", string(b))
+		return fmt.Errorf("decoder(%d) not supported", b)
 	}
 	buf.UnreadByte()
 	return decoder(buf, indirect(rv))
@@ -245,7 +245,7 @@ func dictStructDecoder(buf *bytes.Buffer, rv reflect.Value) error {
 	for {
 		b, err := buf.ReadByte()
 		if err != nil {
-			return fmt.Errorf("dictMapDecoder ReadByte err: %v", err)
+			return fmt.Errorf("dictStructDecoder ReadByte err: %v", err)
 		}
 		if b == 'e' {
 			break

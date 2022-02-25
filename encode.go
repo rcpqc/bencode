@@ -37,7 +37,7 @@ func init() {
 func encode(buf *bytes.Buffer, rv reflect.Value) error {
 	encoder := encoders[rv.Kind()]
 	if encoder == nil {
-		return fmt.Errorf("kind(%s) not supported", rv.Kind().String())
+		return fmt.Errorf("encoder(%s) not supported", rv.Kind().String())
 	}
 	return encoder(buf, rv)
 }
