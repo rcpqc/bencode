@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"reflect"
-	"unsafe"
 )
 
 var (
@@ -134,11 +133,10 @@ func strDecoder(buf *bytes.Buffer, rv reflect.Value) error {
 		return fmt.Errorf("strDecoder parse error")
 	}
 	bytes := buf.Next(int(length))
-	str := *(*string)(unsafe.Pointer(&bytes))
 	if rv.Kind() == reflect.String {
-		rv.SetString(str)
+		rv.SetString(string(bytes))
 	} else if rv.Kind() == reflect.Interface {
-		rv.Set(reflect.ValueOf(str))
+		rv.Set(reflect.ValueOf(string(bytes)))
 	}
 	return nil
 }
