@@ -60,6 +60,7 @@ var decTests = []TestCase{
 	{Entity: TestS2{GGG: "gggee", IFace: []interface{}{4, 6}}, Data: []byte("d3:GGG5:gggee5:ifaceli4ei6eee")},
 	{Entity: TestS2{GGG: "gggee", IFace: map[string]interface{}{"gds": 8, "353": -45}}, Data: []byte("d3:GGG5:gggee5:ifaced3:353i-45e3:gdsi8eee")},
 	{Entity: []int{1, 3, 5}, Data: []byte("li1ei3ei5ee")},
+	{Entity: TestS2{GGG: "thrt"}, Data: []byte("d3:GGG4:thrt5:filesli12ei55eee")},
 }
 
 func TestMarshal(t *testing.T) {

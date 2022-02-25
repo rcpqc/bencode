@@ -142,27 +142,25 @@ func strDecoder(buf *bytes.Buffer, rv reflect.Value) error {
 }
 
 func listDecoder(buf *bytes.Buffer, rv reflect.Value) error {
+	relem := reflect.Value{}
+	rsli := reflect.Value{}
+	if rv.Kind() == reflect.Slice {
+		relem = reflect.New(rv.Type().Elem()).Elem()
+		rsli = rv
+	} else if rv.Kind() == reflect.Interface {
+		var elem interface{}
+		sli := []interface{}{}
+		relem = reflect.ValueOf(&elem).Elem()
+		rsli = reflect.ValueOf(&sli).Elem()
+	}
+
 	if err := readAssert(buf, 'l'); err != nil {
 		return err
 	}
-	if rv.Kind() == reflect.Slice {
-		return listSliceDecoder(buf, rv)
-	} else if rv.Kind() == reflect.Interface {
-		sli := []interface{}{}
-		rsli := reflect.ValueOf(&sli)
-		if err := listSliceDecoder(buf, rsli.Elem()); err != nil {
-			return err
-		}
-		rv.Set(rsli.Elem())
-	}
-	return nil
-}
-
-func listSliceDecoder(buf *bytes.Buffer, rv reflect.Value) error {
 	for {
 		b, err := buf.ReadByte()
 		if err != nil {
-			return fmt.Errorf("listSliceDecoder ReadByte err: %v", err)
+			return fmt.Errorf("listDecoder ReadByte err: %v", err)
 		}
 		if b == 'e' {
 			break
@@ -170,12 +168,18 @@ func listSliceDecoder(buf *bytes.Buffer, rv reflect.Value) error {
 		buf.UnreadByte()
 
 		// Read Value
-		rval := reflect.New(rv.Type().Elem())
-		if err := decode(buf, rval.Elem()); err != nil {
+		if err := decode(buf, relem); err != nil {
 			return err
 		}
-		rv.Set(reflect.Append(rv, rval.Elem()))
+		if rsli.Kind() == reflect.Slice {
+			rsli.Set(reflect.Append(rsli, relem))
+		}
 	}
+
+	if rv.Kind() == reflect.Slice || rv.Kind() == reflect.Interface {
+		rv.Set(rsli)
+	}
+
 	return nil
 }
 
