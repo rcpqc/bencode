@@ -176,7 +176,7 @@ func listDecoder(buf *bytes.Buffer, rv reflect.Value) error {
 		}
 	}
 
-	if rv.Kind() == reflect.Slice || rv.Kind() == reflect.Interface {
+	if rsli.IsValid() {
 		rv.Set(rsli)
 	}
 
@@ -184,25 +184,31 @@ func listDecoder(buf *bytes.Buffer, rv reflect.Value) error {
 }
 
 func dictDecoder(buf *bytes.Buffer, rv reflect.Value) error {
-	if err := readAssert(buf, 'd'); err != nil {
-		return err
-	}
-	if rv.Kind() == reflect.Map && rv.Type().Key().Kind() == reflect.String {
-		return dictMapDecoder(buf, rv)
-	} else if rv.Kind() == reflect.Struct {
+	if rv.Kind() == reflect.Struct {
 		return dictStructDecoder(buf, rv)
-	} else if rv.Kind() == reflect.Interface {
-		rmap := reflect.ValueOf(map[string]interface{}{})
-		if err := dictMapDecoder(buf, rmap); err != nil {
-			return err
-		}
-		rv.Set(rmap)
-		return nil
+	} else {
+		return dictMapDecoder(buf, rv)
 	}
-	return nil
 }
 
 func dictMapDecoder(buf *bytes.Buffer, rv reflect.Value) error {
+	rkey, rval, rmap := reflect.Value{}, reflect.Value{}, reflect.Value{}
+	if rv.Kind() == reflect.Map && rv.Type().Key().Kind() == reflect.String {
+		key := ""
+		rkey = reflect.ValueOf(&key).Elem()
+		rval = reflect.New(rv.Type().Elem()).Elem()
+		rmap = rv
+	} else if rv.Kind() == reflect.Interface {
+		key := ""
+		var val interface{}
+		m := map[string]interface{}{}
+		rkey = reflect.ValueOf(&key).Elem()
+		rval = reflect.ValueOf(&val).Elem()
+		rmap = reflect.ValueOf(&m).Elem()
+	}
+	if err := readAssert(buf, 'd'); err != nil {
+		return err
+	}
 	for {
 		b, err := buf.ReadByte()
 		if err != nil {
@@ -213,23 +219,29 @@ func dictMapDecoder(buf *bytes.Buffer, rv reflect.Value) error {
 		}
 		buf.UnreadByte()
 		// Read Key
-		key := ""
-		rkey := reflect.ValueOf(&key)
-		if err := strDecoder(buf, rkey.Elem()); err != nil {
+		if err := strDecoder(buf, rkey); err != nil {
 			return err
 		}
 		// Read Value
-		rval := reflect.New(rv.Type().Elem())
-		if err := decode(buf, rval.Elem()); err != nil {
+		if err := decode(buf, rval); err != nil {
 			return err
 		}
-		rv.SetMapIndex(rkey.Elem(), rval.Elem())
+		if rmap.Kind() == reflect.Map {
+			rmap.SetMapIndex(rkey, rval)
+		}
+	}
+
+	if rmap.IsValid() {
+		rv.Set(rmap)
 	}
 	return nil
 }
 
 func dictStructDecoder(buf *bytes.Buffer, rv reflect.Value) error {
 	fields := tyParseMap(rv.Type())
+	if err := readAssert(buf, 'd'); err != nil {
+		return err
+	}
 	for {
 		b, err := buf.ReadByte()
 		if err != nil {
