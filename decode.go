@@ -241,7 +241,7 @@ func dictMapDecoder(buf *bytes.Buffer, rv reflect.Value) error {
 }
 
 func dictStructDecoder(buf *bytes.Buffer, rv reflect.Value) error {
-	fields := tyParseMap(rv.Type())
+	fields := tyGet(rv.Type()).Map
 	if err := readAssert(buf, 'd'); err != nil {
 		return err
 	}

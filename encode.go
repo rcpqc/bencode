@@ -115,8 +115,7 @@ func strEncoder(buf *bytes.Buffer, rv reflect.Value) error {
 
 func structEncoder(buf *bytes.Buffer, rv reflect.Value) error {
 	buf.Write([]byte{'d'})
-	fields := tyParseSlice(rv.Type())
-	for _, field := range fields {
+	for _, field := range tyGet(rv.Type()).Order {
 		if field.Option == "omitempty" && rv.Field(field.Index).IsZero() {
 			continue
 		}
